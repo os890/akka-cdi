@@ -18,12 +18,12 @@
  */
 package org.os890.test.actor.cdi.akka;
 
-import org.os890.actor.cdi.akka.api.CdiAwareUntypedActor;
+import akka.actor.UntypedActor;
 
 import javax.inject.Inject;
 import java.util.concurrent.CountDownLatch;
 
-public class InjectionAwareActor extends CdiAwareUntypedActor
+public class InjectionAwareActor extends UntypedActor
 {
     @Inject
     private TestService testService;

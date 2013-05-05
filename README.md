@@ -14,10 +14,6 @@ Injection of Akka artifacts:
     private ActorRef alternativeActor;
 
     @Inject
-    @Actor(type = AdvancedActor.class)
-    private ActorRef injectionAwareActor;
-
-    @Inject
     private ActorSystem defaultSystem;
 
     @Inject
@@ -27,9 +23,40 @@ Injection of Akka artifacts:
 Injection of ActorRef per name,... would be possible as well, however, this small lib shouldn't provide a full integration.
 This lib should just show how easy it is to integrate CDI with actor frameworks like Akka.
 
-Injection of actors:
+Injection in actors:
 
-    public class AdvancedActor extends CdiAwareUntypedActor
+    public class MyActor extends UntypedActor
+    {
+        @Inject
+        private MyService myService;
+
+        @Override
+        public void onReceive(Object o) throws Exception
+        {
+            myService.process(/*...*/);
+        }
+    }
+
+<hr/>
+
+**If** you just need injection of CDI beans in an actor ( **without** this lib), you can simply do:
+
+    public abstract class CdiAwareUntypedActor extends UntypedActor
+    {
+        @Override
+        public void preStart()
+        {
+            BeanProvider.injectFields(this);
+        }
+
+        @Override
+        public void postRestart(Throwable reason)
+        {
+            BeanProvider.injectFields(this);
+        }
+    }
+
+    public class MyActor extends CdiAwareUntypedActor
     {
         @Inject
         private MyService myService;
