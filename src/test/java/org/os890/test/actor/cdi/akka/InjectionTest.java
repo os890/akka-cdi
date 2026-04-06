@@ -1,44 +1,46 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.os890.test.actor.cdi.akka;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.junit.Arquillian;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import jakarta.inject.Inject;
+import org.apache.pekko.actor.ActorRef;
+import org.apache.pekko.actor.ActorSystem;
+import org.junit.jupiter.api.Test;
 import org.os890.actor.cdi.akka.api.Actor;
 import org.os890.actor.cdi.akka.api.ActorSystemName;
-import org.os890.actor.cdi.akka.impl.ActorRefProducer;
-import org.os890.actor.cdi.akka.impl.ActorSystemProducer;
+import org.os890.cdi.addon.dynamictestbean.EnableTestBeans;
 
-import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(Arquillian.class)
+/**
+ * Integration test verifying CDI injection of Pekko actors and actor systems.
+ *
+ * <p>Uses the dynamic-cdi-test-bean-addon with full classpath scan to boot
+ * a CDI SE container that discovers all beans automatically.
+ */
+@EnableTestBeans
 public class InjectionTest
 {
-    @Deployment
-    public static WebArchive createTestArchive()
-    {
-        return ShrinkWrap.create(WebArchive.class, "actor-cdi-akka-test.war")
-                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
-                .addClass(StandardActor1.class)
-                .addClass(StandardActor2.class)
-                .addClass(InjectionAwareActor.class)
-                .addClass(TestService.class)
-
-                .addAsLibraries(ShrinkWrap.create(JavaArchive.class, "actor-cdi-akka-lib.jar")
-                        .addPackages(true, Actor.class.getPackage())
-                        .addClass(ActorRefProducer.class)
-                        .addClass(ActorSystemProducer.class));
-    }
-
     @Inject
     @Actor(type = StandardActor1.class)
     private ActorRef standardActor;
@@ -62,6 +64,11 @@ public class InjectionTest
     @Inject
     private TestService testService;
 
+    /**
+     * Verifies that a standard actor receives messages via the default actor system.
+     *
+     * @throws AssertionError if the actor does not receive the expected message
+     */
     @Test
     public void testStandardActor()
     {
@@ -78,9 +85,14 @@ public class InjectionTest
         }
 
         assertEquals("hello akka with cdi", StandardActor1.message);
-        assertTrue(standardActor.toString().contains("akka://default"));
+        assertTrue(standardActor.toString().contains("pekko://default"));
     }
 
+    /**
+     * Verifies that an actor on a named alternative actor system receives messages.
+     *
+     * @throws AssertionError if the actor does not receive the expected message
+     */
     @Test
     public void testAlternativeActor()
     {
@@ -97,9 +109,14 @@ public class InjectionTest
         }
 
         assertEquals("hello akka with cdi", StandardActor2.message);
-        assertTrue(alternativeActor.toString().contains("akka://alternativeActorSystem"));
+        assertTrue(alternativeActor.toString().contains("pekko://alternativeActorSystem"));
     }
 
+    /**
+     * Verifies that CDI beans are injected into actor instances and invoked correctly.
+     *
+     * @throws AssertionError if the injected service was not called by the actor
+     */
     @Test
     public void testInjectionInActor()
     {
@@ -116,9 +133,12 @@ public class InjectionTest
         }
 
         assertTrue(testService.isCalled());
-        assertTrue(injectionAwareActor.toString().contains("akka://default"));
+        assertTrue(injectionAwareActor.toString().contains("pekko://default"));
     }
 
+    /**
+     * Verifies that a default {@link ActorSystem} is injected when no qualifier is present.
+     */
     @Test
     public void testInjectionOfActorSystem()
     {
@@ -126,6 +146,9 @@ public class InjectionTest
         assertEquals(ActorSystem.create().name(), defaultSystem.name());
     }
 
+    /**
+     * Verifies that a named {@link ActorSystem} is injected via {@link ActorSystemName}.
+     */
     @Test
     public void testInjectionOfNamedActorSystem()
     {

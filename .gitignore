@@ -1,16 +1,24 @@
-target
-data
+# Build output
+target/
+
+# IDE
+.idea/
 *.iml
-*.iws
-*.ipr
 .project
 .classpath
-.settings
-.metadata
-.svn
-.idea
-.checkstyle
-atlassian-ide-plugin.xml
-.sonar-ide.properties
-*.patch
+.settings/
+.vscode/
+*.swp
 *~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
